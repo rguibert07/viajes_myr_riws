@@ -59,7 +59,8 @@ DOWNLOAD_DELAY = 3
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "viajescrawling.pipelines.ViajescrawlingPipeline": 300,
+    "viajescrawling.pipelines.LimpiezaPipeline": 300,
+    "viajescrawling.pipelines.DuplicadosPipeline": 400,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

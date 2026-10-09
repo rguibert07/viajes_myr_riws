@@ -1,4 +1,5 @@
 import scrapy
+from urllib.parse import urlparse, unquote
 
 
 class WikivoyageSpider(scrapy.Spider):
@@ -40,7 +41,14 @@ class WikivoyageSpider(scrapy.Spider):
                 "fuente": "es.wikivoyage.org",
             }
 
-        # Seguir enlaces a otras guías (se evitan páginas especiales)
         for href in response.css("#mw-content-text a::attr(href)").getall():
-            if href.startswith("/wiki/") and ":" not in href and "#" not in href:
-                yield response.follow(href, callback=self.parse)
+            url = response.urljoin(href)
+            p = urlparse(url)
+            if p.netloc != "es.wikivoyage.org":
+                continue
+            if not p.path.startswith("/wiki/"):
+                continue
+            nombre = unquote(p.path[len("/wiki/"):])
+            if not nombre or ":" in nombre:
+                continue
+            yield response.follow(p._replace(fragment="").geturl(), callback=self.parse)

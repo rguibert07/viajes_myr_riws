@@ -373,12 +373,13 @@ python -m pip install scrapy
 python -m pip freeze > requirements.txt
 ```
 
-Ejecución, siempre desde la carpeta que contiene `scrapy.cfg`, con una exportación por fuente:
+Desde la raíz del repositorio, activa el entorno virtual como arriba y cambia a la carpeta que contiene `scrapy.cfg`. Ejecuta los crawlers desde ahí:
 
 ```powershell
-scrapy crawl spaininfo -O spaininfo.jsonl
-scrapy crawl wikivoyage -O wikivoyage.jsonl
-python check.py
+Set-Location .\viajescrawling
+python -m scrapy crawl spaininfo -O spaininfo.jsonl
+python -m scrapy crawl wikivoyage -O wikivoyage.jsonl
+python .\viajescrawling\check.py
 ```
 
 Script de comprobación (`check.py`):
@@ -449,6 +450,8 @@ Plan según los requisitos de la asignatura. Las decisiones concretas se irán d
 Estructura del repositorio:
 
 ```
+README.md
+requirements.txt
 viajescrawling/
   scrapy.cfg
   viajescrawling/
@@ -457,9 +460,7 @@ viajescrawling/
     items.py
     pipelines.py
     settings.py
-  check.py
-  requirements.txt
-  README.md
+    check.py
 ```
 
 Los datos exportados (`*.jsonl`) se suben al repositorio si pesan poco; si no, se comparte un enlace de descarga. El `.gitignore` incluye `.venv/`. No se suben credenciales.
