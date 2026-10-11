@@ -411,12 +411,12 @@ for nombre in archivos:
 
 | | spain.info | Wikivoyage |
 |---|---|---|
-| Documentos obtenidos | `______` | `______` |
-| IDs distintos | `______` | `______` |
-| Reparto por tipo | `______` | `______` |
-| Sin descripción | `______` | `______` |
-| Longitud media del texto | `______` | `______` |
-| Descartados por duplicado o texto corto | `______` | `______` |
+| Documentos obtenidos | `316` | `512` |
+| IDs distintos | `316` | `512` |
+| Reparto por tipo | `destino: 220, región 61, artículo: 34, ruta: 1` | `destino:512` |
+| Sin descripción | `0` | `512` |
+| Longitud media del texto | `3.687 caracteres` | `38.593 caracteres` |
+| Descartados por duplicado o texto corto | `No registrado` | `No registrado` |
 
 ### Limitaciones conocidas
 
@@ -425,8 +425,9 @@ for nombre in archivos:
 - `ciudad` y `pais` solo se informan en spain.info. Para filtrar por localización en ambas fuentes habrá que deducirlos más adelante, por ejemplo con ayuda del LLM durante la indexación.
 - Las diferencias de longitud y estilo entre una web institucional y una colaborativa pueden afectar al ranking. Lo revisaremos en la fase de búsqueda.
 - Si una web empieza a devolver 403 o 429, reduciremos el ritmo y conservaremos los datos ya descargados en lugar de insistir.
-
----
+- En el conjunto de Wikivoyage, los 512 documentos exportados no tienen contenido en el campo `descripcion`. La recuperación deberá apoyarse inicialmente en `titulo`, `texto` y `secciones`, o deberá definirse posteriormente una estrategia para generar o extraer descripciones.
+- La longitud media del texto es considerablemente mayor en Wikivoyage (38.593 caracteres) que en spain.info (3.687 caracteres). Antes de la indexación habrá que comprobar si esta diferencia procede únicamente de la extensión de las guías o si también se está extrayendo navegación, contenido repetido u otros elementos no relevantes.
+- El script `check.py` valida los documentos exportados, pero no proporciona el número de elementos descartados por duplicado o texto corto. Por este motivo, ese dato no quedó registrado de forma separada en los resultados disponibles.
 
 ## 9. Siguientes fases
 
