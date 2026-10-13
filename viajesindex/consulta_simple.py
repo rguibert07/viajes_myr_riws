@@ -2,11 +2,15 @@ from elasticsearch import Elasticsearch
 
 es = Elasticsearch("http://localhost:9200")
 
-respuesta = es.search(
-    index="viajes",
-    query={"match": {"texto": "coruña"}},
-    size=10
-)
-for hit in respuesta["hits"]["hits"]:
-    doc = hit["_source"]
-    print(hit["_id"], hit["_score"], doc["titulo"])
+def consulta_simple (texto: str) -> list:
+    respuesta = es.search(
+        index="viajes",
+        query={"match": {"texto": texto}},
+        size=10
+    )
+
+    hits = respuesta["hits"]["hits"]
+    return list(map(lambda x: x["_source"], hits))
+
+if __name__ == '__main__':
+    print(consulta_simple ("Coruña"))
