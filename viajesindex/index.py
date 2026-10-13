@@ -16,5 +16,6 @@ es.indices.create(index="viajes", settings={
         "titulo": {"type": "text", "analyzer": "spanish"},
         "descripcion": {"type": "text", "analyzer": "spanish"},
         "texto": {"type": "text", "analyzer": "spanish"},
+        "secciones": {"type": "keyword"},
     }
 })

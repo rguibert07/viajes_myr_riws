@@ -8,7 +8,7 @@ def acciones(ruta):
     with open(ruta, encoding="utf-8") as f:
         for linea in f:
             doc = json.loads(linea)
-            yield {"_index": "recursos", "_id": doc["id"],
+            yield {"_index": "viajes", "_id": doc["id"],
                    "_source": doc}
 
 for ok, resultado in streaming_bulk(
@@ -16,5 +16,5 @@ for ok, resultado in streaming_bulk(
         raise_on_error=False):
     if not ok:
         print("Documento rechazado:", resultado)
-es.indices.refresh(index="recursos")
+es.indices.refresh(index="viajes")
 print(es.count(index="recursos")["count"])
