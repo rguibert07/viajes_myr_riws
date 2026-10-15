@@ -429,11 +429,145 @@ for nombre in archivos:
 - La longitud media del texto es considerablemente mayor en Wikivoyage (38.593 caracteres) que en spain.info (3.687 caracteres). Antes de la indexación habrá que comprobar si esta diferencia procede únicamente de la extensión de las guías o si también se está extrayendo navegación, contenido repetido u otros elementos no relevantes.
 - El script `check.py` valida los documentos exportados, pero no proporciona el número de elementos descartados por duplicado o texto corto. Por este motivo, ese dato no quedó registrado de forma separada en los resultados disponibles.
 
-## 9. Siguientes fases
+## 9. Indexación con Elasticsearch
+### 9.1. Configuración del índice
+La unidad documental es la página, con mappings con analizador en español para `titulo`,`descripcion`, `texto` y `secciones`, así como `keyword` para `ciudad`, `pais`, `tipo`, `fuente` y `url_origen`.
+El índice se define como `strict` para rechazar campos no declarados.
 
+`viajesindex/index.py`
+```python
+from elasticsearch import Elasticsearch
+
+es = Elasticsearch("http://localhost:9200")
+
+es.indices.create(index="viajes", settings={
+    "number_of_shards": 1, "number_of_replicas": 0
+}, mappings ={
+    "dynamic": "strict",
+    "properties": {
+        "id": {"type": "keyword"},
+        "ciudad": {"type": "keyword"},
+        "pais": {"type": "keyword"},
+        "tipo": {"type": "keyword"},
+        "fuente": {"type": "keyword"},
+        "url_origen": {"type": "keyword"},
+        "titulo": {"type": "text", "analyzer": "spanish"},
+        "descripcion": {"type": "text", "analyzer": "spanish"},
+        "texto": {"type": "text", "analyzer": "spanish"},
+        "secciones": {"type": "keyword"},
+    }
+})
+```
+
+### 9.2. Carga de documentos al índice
+Los documentos (cada página web) se carga al índice mediante carga en lotes. Los `jsonl` disponibles ya siguen un mismo esquema (ver apartados 5 & 6).
+
+`viajesindex/carga.py`
+```python
+import json
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import streaming_bulk
+
+es = Elasticsearch("http://localhost:9200")
+
+def acciones(ruta):
+    with open(ruta, encoding="utf-8") as f:
+        for linea in f:
+            doc = json.loads(linea)
+            yield {"_index": "viajes", "_id": doc["id"],
+                   "_source": doc}
+
+for ok, resultado in streaming_bulk(
+        es, acciones("index.jsonl"), chunk_size=200,
+        raise_on_error=False):
+    if not ok:
+        print("Documento rechazado:", resultado)
+es.indices.refresh(index="viajes")
+print(es.count(index="recursos")["count"])
+```
+
+### 9.3. Funciones de búsqueda
+Se proporcionan tres posibilidades para realizar consultas sobre el índice.
+
+Una primera consulta simple, que utiliza el texto como punto de comparación:
+`viajesindex/consulta_simple.py`
+```python
+from elasticsearch import Elasticsearch
+
+es = Elasticsearch("http://localhost:9200")
+
+def consulta_simple (texto: str) -> list:
+    respuesta = es.search(
+        index="viajes",
+        query={"match": {"texto": texto}},
+        size=10
+    )
+
+    hits = respuesta["hits"]["hits"]
+    return list(map(lambda x: x["_source"], hits))
+
+if __name__ == '__main__':
+    print(consulta_simple ("Coruña"))
+```
+
+Una consulta multi campo, más adaptada al dominio que utiliza el texto y el título como punto de comparación, dando más peso a este último:
+`viajesindex/consulta_multi_campo.py`
+```python
+from elasticsearch import Elasticsearch
+
+es = Elasticsearch("http://localhost:9200")
+
+def consulta_multi_campo (texto: str) -> list:
+    consulta = {"multi_match": {
+        "query": "coruña",
+        "fields": ["titulo^2", "texto"],
+        "type": "best_fields"
+    }}
+    respuesta = es.search(index="viajes", query=consulta, size=10)
+
+    hits = respuesta["hits"]["hits"]
+    return list(map(lambda x: x["_source"], hits))
+
+if __name__ == '__main__':
+    print(consulta_multi_campo("Coruña"))
+```
+
+Y una tercera consulta filtrada que permite filtrar el índice según cualquiera de los campos definidos en índice (ver apartado 9.1).
+`viajesindex/consulta_filtrada.py`
+```python
+from elasticsearch import Elasticsearch
+
+es = Elasticsearch("http://localhost:9200")
+
+def validar_keys(filtros: dict) -> bool:
+    keys_permitidas = ( "id", "ciudad", "pais", "tipo", "fuente", "url_origen", "titulo", "descripcion", "texto", "secciones")
+    return set(filtros.keys()).issubset(keys_permitidas)
+
+def consulta_filtrada (filtros: dict) -> list:
+    if not validar_keys(filtros):
+        raise Exception("Los filtros solicitados no son válidos!")
+    filtros = list(map(lambda filtro: {"term": {filtro[0]: filtro[1]}}, filtros.items()))
+    consulta = {"bool": { "filter": filtros }}
+    respuesta = es.search(index="viajes", query=consulta, size=10)
+
+    hits = respuesta["hits"]["hits"]
+    return list(map(lambda x: x["_source"], hits))
+
+if __name__ == '__main__':
+    filtros = {"ciudad": "A Coruña"}
+    print(consulta_filtrada(filtros))
+```
+
+TODO:
+- [] *Cambiar lectura de viajesindex/index.jsonl a los dos jsonl de viajescrawler*
+- [] *Relacionado con las limitaciones conocidas (8. Resultados y limitaciones), revisar más adelante los campos que son distintos entre ambas fuentes (vid. `ciudad` y `país`)*
+- [] *Posible revisión de las funciones de búsqueda, por el momento tienen sentido, mas no debería ser mucho problema modificarlas/expandirlas si fuese de interés*
+- [] *Revisión de funciones y extracción de ejemplos (las tres funciones son ejecutables con `python consulta_<TIPO>.py`, con `Coruña` como ejemplo)*
+
+
+## 10. Siguientes fases
 Plan según los requisitos de la asignatura. Las decisiones concretas se irán documentando aquí conforme se tomen.
 
-1. **Indexación con Elasticsearch (local, sin Docker).** Unidad documental: la página. Mapping con analizador `spanish` para `titulo`, `descripcion`, `texto` y `secciones`, y `keyword` para `ciudad`, `pais`, `tipo`, `fuente` y `url_origen`. Carga por lotes desde los JSONL y comprobación de que el índice se puede reconstruir a partir de ellos.
 2. **Estrategia de búsqueda.** Búsqueda inicial sobre el texto como punto de comparación, y después una estrategia adaptada al dominio (combinar campos, más peso al título, filtros por `tipo`, `fuente` y `ciudad`, búsqueda de frases), justificada con consultas de ejemplo y análisis de aciertos y fallos.
 3. **Interfaz web.** Consulta, resultados con título, fragmento y enlace a la fuente, filtros, y estados de carga, error y sin resultados.
 4. **Integración del LLM.** Una única vía a elegir (enriquecer documentos durante la indexación o postprocesar resultados, por ejemplo con RAG), con control del presupuesto de tokens, caché de resultados y búsqueda básica siempre disponible. Decisión: `______`
