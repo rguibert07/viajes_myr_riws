@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
 
@@ -12,9 +13,10 @@ def acciones(ruta):
                    "_source": doc}
 
 for ok, resultado in streaming_bulk(
-        es, acciones("index.jsonl"), chunk_size=200,
+        es, acciones(Path(__file__).resolve().with_name("index.jsonl")),
+        chunk_size=200,
         raise_on_error=False):
     if not ok:
         print("Documento rechazado:", resultado)
 es.indices.refresh(index="viajes")
-print(es.count(index="recursos")["count"])
+print(es.count(index="viajes")["count"])
