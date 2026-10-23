@@ -10,7 +10,8 @@ def validar_keys(filtros: dict) -> bool:
 def consulta_filtrada(filtros: dict) -> list:
     if not validar_keys(filtros):
         raise Exception("Los filtros solicitados no son válidos!")
-    filtros = list(map(lambda filtro: {"term": {f"{filtro[0]}.keyword": filtro[1]}}, filtros.items()))
+    #filtros = list(map(lambda filtro: {"term": {f"{filtro[0]}.keyword": filtro[1]}}, filtros.items()))
+    filtros = list(map(lambda filtro: {"match_phrase": {filtro[0]: filtro[1]}}, filtros.items()))
     consulta = {"bool": {"filter": filtros}}
     respuesta = es.search(index="viajes", query=consulta, size=10)
 
