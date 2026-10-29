@@ -1,0 +1,95 @@
+CONSULTA: qué ver en Santiago de Compostela
+  Simple (match sobre texto)
+    1. Santiago de Compostela | spain.info | destino | 12.20
+    2. A Coruña (Provincia) | spain.info | region | 11.90
+    3. Portal oficial de turismo de España | spain.info | articulo | 11.22
+    4. Catoira | spain.info | destino | 11.13
+    5. Galicia | spain.info | region | 10.98
+  Multi campo (titulo^2, texto)
+    1. Santiago de Compostela | spain.info | destino | 20.29
+    2. A Coruña (Provincia) | spain.info | region | 11.90
+    3. Portal oficial de turismo de España | spain.info | articulo | 11.22
+    4. Catoira | spain.info | destino | 11.13
+    5. Galicia | spain.info | region | 10.98
+  Estrategia final
+    1. Santiago de Compostela | spain.info | destino | 49.86
+    2. Playa de Santiago | spain.info | destino | 22.21
+    3. Galicia | spain.info | region | 21.99
+    4. Isla de Santiago | es.wikivoyage.org | destino | 19.81
+    5. Santiago de Chile | es.wikivoyage.org | destino | 19.74
+
+CONSULTA: rutas de naturaleza en Andalucía
+  Simple (match sobre texto)
+    1. Cádiz (Provincia) | spain.info | region | 9.49
+    2. Jaén (Provincia) | spain.info | region | 9.44
+    3. Sevilla (Provincia) | spain.info | region | 9.03
+    4. Parque Nacional de la Sierra de las Nieves | spain.info | articulo | 8.86
+    5. Estepona | spain.info | destino | 8.40
+  Multi campo (titulo^2, texto)
+    1. Rutas | spain.info | ruta | 14.62
+    2. Naturaleza | spain.info | articulo | 14.62
+    3. Andalucía | spain.info | region | 14.62
+    4. Cádiz (Provincia) | spain.info | region | 9.49
+    5. Jaén (Provincia) | spain.info | region | 9.44
+  Estrategia final
+    1. Rutas | spain.info | ruta | 34.49
+    2. Naturaleza | spain.info | articulo | 33.77
+    3. Andalucía | spain.info | region | 31.68
+    4. Parque Nacional de la Sierra de las Nieves | spain.info | articulo | 13.66
+    5. Portal oficial de turismo de España | spain.info | articulo | 9.54
+
+CONSULTA: gastronomía y enoturismo en La Rioja
+  Simple (match sobre texto)
+    1. Gastronomía y enoturismo | spain.info | articulo | 20.07
+    2. Vitoria-Gasteiz | spain.info | destino | 9.22
+    3. La Rioja (Argentina) | es.wikivoyage.org | destino | 8.71
+    4. País Vasco | spain.info | region | 8.68
+    5. Araba-Álava (Provincia) | spain.info | region | 8.52
+  Multi campo (titulo^2, texto)
+    1. Gastronomía y enoturismo | spain.info | articulo | 22.23
+    2. La Rioja (Argentina) | es.wikivoyage.org | destino | 11.11
+    3. Vitoria-Gasteiz | spain.info | destino | 9.22
+    4. País Vasco | spain.info | region | 8.68
+    5. Araba-Álava (Provincia) | spain.info | region | 8.52
+  Estrategia final
+    1. Gastronomía y enoturismo | spain.info | articulo | 53.18
+    2. La Rioja (Argentina) | es.wikivoyage.org | destino | 24.84
+    3. Hidalgo | es.wikivoyage.org | destino | 10.73
+    4. Nueva Delhi | es.wikivoyage.org | destino | 10.38
+    5. Groenlandia | es.wikivoyage.org | destino | 9.75
+
+CONSULTA: playas de las Islas Baleares
+  Simple (match sobre texto)
+    1. Islas Baleares | spain.info | region | 12.11
+    2. Eivissa | spain.info | destino | 11.23
+    3. Ibiza (Isla) | spain.info | region | 10.70
+    4. Valencia (Provincia) | spain.info | region | 10.67
+    5. Sant Antoni de Portmany | spain.info | destino | 10.21
+  Multi campo (titulo^2, texto)
+    1. Islas Baleares | spain.info | region | 19.40
+    2. Eivissa | spain.info | destino | 11.23
+    3. Ibiza (Isla) | spain.info | region | 10.70
+    4. Valencia (Provincia) | spain.info | region | 10.67
+    5. Costas y playas | spain.info | articulo | 10.21
+  Estrategia final
+    1. Islas Baleares | spain.info | region | 74.65
+    2. Costas y playas | spain.info | articulo | 26.79
+    3. Playa de Santiago | spain.info | destino | 23.73
+    4. Islas Canarias | spain.info | region | 20.38
+    5. Islas Malvinas | es.wikivoyage.org | destino | 20.27
+
+CONSULTA: gastronomía y enoturismo en La Rioja  FILTROS: {'fuente': 'spain.info'}
+  Estrategia final
+    1. Gastronomía y enoturismo | spain.info | articulo | 53.18
+    2. Galicia | spain.info | region | 9.44
+    3. Vitoria-Gasteiz | spain.info | destino | 9.22
+    4. Comunidad Valenciana | spain.info | region | 8.74
+    5. País Vasco | spain.info | region | 8.68
+
+CONSULTA: qué ver en Santiago de Compostela  FILTROS: {'fuente': 'es.wikivoyage.org', 'tipo': 'destino'}
+  Estrategia final
+    1. Isla de Santiago | es.wikivoyage.org | destino | 19.81
+    2. Santiago de Chile | es.wikivoyage.org | destino | 19.74
+    3. Ribadesella | es.wikivoyage.org | destino | 7.89
+    4. España | es.wikivoyage.org | destino | 6.78
+    5. Lugo | es.wikivoyage.org | destino | 6.68

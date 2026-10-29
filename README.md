@@ -457,6 +457,48 @@ es.indices.create(index="viajes", settings={
         "secciones": {"type": "keyword"},
     }
 })
+
+### 9.1. Configuración del índice y mejoras en el mapeo
+
+El índice se define como `strict` para rechazar campos no declarados. La unidad documental es la página.
+
+* **Mapeo estándar (`viajesindex/index.py`):** Define analizadores en español para `titulo`, `descripcion` y `texto`, y tipo `keyword` para los metadatos y el campo `secciones`.
+* **Mapeo mejorado (`viajesindex/index_mejora.py`):** Modifica el campo `secciones` de `keyword` a `text` con el analizador `spanish`, añadiendo un subcampo `secciones.raw` de tipo `keyword`. Esto permite realizar búsquedas de texto sobre las secciones tokenizadas (clave para aprovechar la estructura de las guías de Wikivoyage) sin perder la capacidad de realizar agregaciones o filtros exactos.
+
+`viajesindex/index_mejora.py`
+```python
+from elasticsearch import Elasticsearch
+
+es = Elasticsearch("http://localhost:9200")
+
+es.indices.create(
+    index="viajes",
+    settings={
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+    },
+    mappings={
+        "dynamic": "strict",
+        "properties": {
+            "id": {"type": "keyword"},
+            "ciudad": {"type": "keyword"},
+            "pais": {"type": "keyword"},
+            "tipo": {"type": "keyword"},
+            "fuente": {"type": "keyword"},
+            "url_origen": {"type": "keyword"},
+            "titulo": {"type": "text", "analyzer": "spanish"},
+            "descripcion": {"type": "text", "analyzer": "spanish"},
+            "texto": {"type": "text", "analyzer": "spanish"},
+            "secciones": {
+                "type": "text",
+                "analyzer": "spanish",
+                "fields": {
+                    "raw": {"type": "keyword"}
+                }
+            },
+        }
+    }
+)
 ```
 
 ### 9.2. Carga de documentos al índice
@@ -521,7 +563,8 @@ es = Elasticsearch("http://localhost:9200")
 
 def consulta_multi_campo (texto: str) -> list:
     consulta = {"multi_match": {
-        "query": "coruña",
+        # Usa el parámetro: antes estaba fijo "coruña" y ignoraba el texto recibido
+        "query": texto,
         "fields": ["titulo^2", "texto"],
         "type": "best_fields"
     }}
@@ -570,9 +613,89 @@ TODO:
 ## 10. Siguientes fases
 Plan según los requisitos de la asignatura. Las decisiones concretas se irán documentando aquí conforme se tomen.
 
-2. **Estrategia de búsqueda.** Búsqueda inicial sobre el texto como punto de comparación, y después una estrategia adaptada al dominio (combinar campos, más peso al título, filtros por `tipo`, `fuente` y `ciudad`, búsqueda de frases), justificada con consultas de ejemplo y análisis de aciertos y fallos.
+2. **Estrategia de búsqueda** (implementada, ver 10.1). Búsqueda inicial sobre el texto como punto de comparación, y después una estrategia adaptada al dominio (combinar campos, más peso al título, filtros por `tipo`, `fuente` y `ciudad`, búsqueda de frases), justificada con consultas de ejemplo y análisis de aciertos y fallos.
 3. **Interfaz web.** Consulta, resultados con título, fragmento y enlace a la fuente, filtros, y estados de carga, error y sin resultados.
 4. **Integración del LLM.** Una única vía a elegir (enriquecer documentos durante la indexación o postprocesar resultados, por ejemplo con RAG), con control del presupuesto de tokens, caché de resultados y búsqueda básica siempre disponible. Decisión: `______`
+
+### 10.1. Estrategia de búsqueda
+
+Punto 2 del plan. Tomamos la consulta simple del apartado 9.3 como referencia y construimos una estrategia adaptada al dominio en `viajesindex/busqueda.py`, que evaluamos con `viajesindex/evaluacion.py`.
+
+**Decisiones de diseño**
+
+| Decisión | Implementación | Motivo |
+|---|---|---|
+| Varios campos con pesos | `multi_match` sobre `titulo^4`, `secciones^2`, `descripcion^2` y `texto` | En una guía de viajes el título suele ser el nombre del lugar, por lo que una coincidencia ahí indica más relevancia que una mención dentro de un texto largo. `descripcion` solo existe en spain.info y `secciones` solo en Wikivoyage (apartado 8) |
+| Búsqueda de frases | Segundo `multi_match` de tipo `phrase` con `boost: 3`, combinado con el de términos en un `bool.should` | Sube las páginas que contienen la expresión completa ("Santiago de Compostela") sobre las que solo contienen palabras sueltas |
+| Filtros | `bool.filter` con `term` sobre `tipo`, `fuente`, `ciudad` y `pais` | Son campos `keyword`; el filtro restringe el conjunto sin alterar la puntuación |
+| Fragmento | `highlight` sobre `texto` (200 caracteres) | Lo necesitará la interfaz web para mostrar el contexto de cada resultado |
+| Exigencia de términos | Constante `MINIMO_COINCIDENCIA` (`None` o `"100%"`) | Permite comparar cobertura frente a precisión (ver análisis) |
+
+Núcleo de `viajesindex/busqueda.py` (el resto del archivo ejecuta la consulta, extrae los campos de cada resultado y ofrece una línea de comandos):
+
+```python
+CAMPOS = ["titulo^4", "secciones^2", "descripcion^2", "texto"]
+MINIMO_COINCIDENCIA = None  # o "100%" para exigir todos los términos
+
+def construir_consulta(texto: str, filtros: dict | None = None) -> dict:
+    filtros = filtros or {}
+    por_terminos = {"query": texto, "fields": CAMPOS,
+                    "type": "best_fields", "tie_breaker": 0.3}
+    if MINIMO_COINCIDENCIA:
+        por_terminos["minimum_should_match"] = MINIMO_COINCIDENCIA
+    return {"bool": {
+        "should": [
+            {"multi_match": {"query": texto, "fields": CAMPOS,
+                             "type": "phrase", "boost": 3}},
+            {"multi_match": por_terminos},
+        ],
+        "minimum_should_match": 1,
+        "filter": [{"term": {c: v}} for c, v in filtros.items()],
+    }}
+```
+
+Uso desde la raíz del repositorio, con Elasticsearch en marcha y el índice cargado:
+
+```
+python .\viajesindex\busqueda.py "playas de las Islas Baleares" --fuente spain.info
+python .\viajesindex\evaluacion.py
+```
+
+`evaluacion.py` lanza las consultas del apartado 1 con la búsqueda simple, la multi campo y la estrategia final, más dos casos con filtros, y guarda los cinco primeros resultados de cada una en `resultados_evaluacion.txt`.
+
+**Comprobación del analizador**
+
+En la primera ejecución, "de" y "en" aparecían resaltados en los fragmentos y puntuaban, lo que no debería ocurrir con el analizador `spanish`. Lo comprobamos con la API `_analyze` sobre el campo `texto`: devolvía los seis tokens de "qué ver en Santiago de Compostela" sin eliminar palabras vacías ni reducir a raíz, de modo que el índice no estaba usando el analizador en español. El analizador de un campo no se puede cambiar sobre un índice existente, así que borramos el índice, lo recreamos con `index_mejora.py` y volvimos a cargar los documentos con `carga.py`. Tras recrearlo, `_analyze` devuelve `['ver', 'santiag', 'compostel']`, como corresponde. Conviene repetir esta comprobación siempre que se recree el índice.
+
+**Resultados de la evaluación** (tres primeros de cada estrategia, con el índice recreado)
+
+| Consulta | Simple | Multi campo | Estrategia final |
+|---|---|---|---|
+| qué ver en Santiago de Compostela | Santiago de Compostela (12,20), A Coruña (Provincia), Portal oficial de turismo de España | Santiago de Compostela (20,29), A Coruña (Provincia), Portal oficial de turismo de España | Santiago de Compostela (49,86), Playa de Santiago, Galicia |
+| rutas de naturaleza en Andalucía | Cádiz (Provincia), Jaén (Provincia), Sevilla (Provincia) | Rutas, Naturaleza, Andalucía | Rutas (34,49), Naturaleza (33,77), Andalucía (31,68) |
+| gastronomía y enoturismo en La Rioja | Gastronomía y enoturismo (20,07), Vitoria-Gasteiz, La Rioja (Argentina) | `______` | `______` |
+| playas de las Islas Baleares | `______` | `______` | `______` |
+| La Rioja, filtrada por `fuente: spain.info` | no aplica | no aplica | `______` |
+| Santiago, filtrada por `fuente: es.wikivoyage.org` y `tipo: destino` | no aplica | no aplica | `______` |
+
+**Análisis de aciertos y fallos**
+
+Aciertos:
+
+- En "qué ver en Santiago de Compostela" el primer resultado es el correcto en las tres estrategias, pero la estrategia final lo separa mucho más del resto (49,86 frente a 12,20 en la búsqueda simple), gracias al peso del título y a la búsqueda de frase.
+- En "rutas de naturaleza en Andalucía", la búsqueda simple devuelve provincias andaluzas que mencionan el tema en el texto. Con el peso del título suben las páginas cuyo título coincide con la consulta, entre ellas la propia región (Andalucía).
+
+Fallos:
+
+- En la primera consulta, los puestos 2 a 5 de la estrategia final (Playa de Santiago, Isla de Santiago, Santiago de Chile) no tienen relación con la consulta. Casan solo con "santiag" y no con "compostel". En Playa de Santiago, además, el fragmento resaltado es "Ver más", un texto que se repite en las páginas de spain.info y hace que el término "ver" puntúe en casi cualquier página de ese sitio. La búsqueda simple mostraba aquí páginas de Galicia, más cercanas a lo buscado.
+- En la segunda consulta, "Rutas" y "Naturaleza" son páginas genéricas de spain.info que ocupan los dos primeros puestos. Con título corto y genérico, el peso `titulo^4` las favorece más de lo deseable. La búsqueda multi campo ya producía este orden, por lo que la estrategia final solo amplía la diferencia de puntuación.
+- En la tercera consulta, la búsqueda simple sube "La Rioja (Argentina)" de Wikivoyage: la ambigüedad entre la región española y la provincia argentina. Falta comprobar cómo responde la estrategia final.
+
+**Mejora a evaluar y pendiente**
+
+- `MINIMO_COINCIDENCIA = "100%"` exige que casen todos los términos de la consulta, lo que debería eliminar los resultados que solo coinciden con "Santiago". El coste es una menor cobertura en consultas largas. Comparar las ejecuciones de `evaluacion.py` con `None` y con `"100%"`: `______`
+- El texto repetido de spain.info ("Ver más" y similares) afecta al ranking y está relacionado con la limitación de selectores del apartado 8. Valorar acotar el selector o limpiar esas cadenas en el pipeline.
+- Completar la tabla de resultados con las consultas 3 a 6 y decidir el valor final de `MINIMO_COINCIDENCIA`: `______`
 
 ---
 

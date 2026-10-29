@@ -4,7 +4,8 @@ es = Elasticsearch("http://localhost:9200")
 
 def consulta_multi_campo (texto: str) -> list:
     consulta = {"multi_match": {
-        "query": "coruña",
+        # Usa el parámetro: antes estaba fijo "coruña" y ignoraba el texto recibido
+        "query": texto,
         "fields": ["titulo^2", "texto"],
         "type": "best_fields"
     }}
