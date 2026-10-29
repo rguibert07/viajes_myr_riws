@@ -1,6 +1,6 @@
 from elasticsearch import Elasticsearch
 
-es = Elasticsearch("http://localhost:9200")
+es = Elasticsearch("http://localhost:9200", request_timeout=120,)
 
 def consulta_multi_campo (texto: str) -> list:
     consulta = {"multi_match": {
