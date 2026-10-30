@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Buscador de destinos, regiones, rutas y propuestas de viaje por España."
+    >
+
+    <title>MYR Viajes | Buscador de viajes por España</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='styles.css') }}"
+    >
+</head>
+
+<body>
+    <header class="cabecera">
+        <div class="cabecera__contenido">
+            <a class="marca" href="/" aria-label="Ir al inicio">
+                <span class="marca__logo">MYR</span>
+
+                <span class="marca__texto">
+                    <strong>MYR Viajes</strong>
+                    <small>Explora España</small>
+                </span>
+            </a>
+
+            <span class="cabecera__proyecto">
+                Buscador de Recuperación de Información
+            </span>
+        </div>
+    </header>
+
+    <main class="contenido-principal">
+        <section class="presentacion">
+            <span class="presentacion__etiqueta">
+                Descubre nuevos destinos
+            </span>
+
+            <h1>Buscador de viajes por España</h1>
+
+            <p>
+                Encuentra destinos, rutas, regiones y propuestas para
+                preparar tu próximo viaje.
+            </p>
+        </section>
+
+        <section
+            class="panel-busqueda"
+            aria-labelledby="titulo-buscador"
+        >
+            <h2 id="titulo-buscador" class="visualmente-oculto">
+                Formulario de búsqueda
+            </h2>
+
+            <form id="formulario-busqueda">
+                <div class="busqueda-principal">
+                    <div class="campo-consulta">
+                        <label for="consulta">¿Qué quieres descubrir?</label>
+
+                        <div class="entrada-busqueda">
+                            <span
+                                class="entrada-busqueda__icono"
+                                aria-hidden="true"
+                            >
+                                ⌕
+                            </span>
+
+                            <input
+                                id="consulta"
+                                name="q"
+                                type="search"
+                                placeholder="Ejemplo: qué ver en Santiago de Compostela"
+                                autocomplete="off"
+                            >
+                        </div>
+                    </div>
+
+                    <button id="boton-buscar" type="submit">
+                        Buscar
+                    </button>
+                </div>
+
+                <details class="filtros">
+                    <summary>Filtros de búsqueda</summary>
+
+                    <div class="filtros__contenido">
+                        <div class="campo">
+                            <label for="tipo">Tipo</label>
+
+                            <select id="tipo" name="tipo">
+                                <option value="">Todos</option>
+                                <option value="destino">Destino</option>
+                                <option value="region">Región</option>
+                                <option value="ruta">Ruta</option>
+                                <option value="articulo">Artículo</option>
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="fuente">Fuente</label>
+
+                            <select id="fuente" name="fuente">
+                                <option value="">Todas</option>
+                                <option value="spain.info">
+                                    spain.info
+                                </option>
+                                <option value="es.wikivoyage.org">
+                                    Wikivoyage
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="ciudad">Ciudad</label>
+
+                            <input
+                                id="ciudad"
+                                name="ciudad"
+                                type="text"
+                                placeholder="Ejemplo: Santiago"
+                            >
+                        </div>
+
+                        <label class="opcion-frase">
+                            <input
+                                id="frase"
+                                name="frase"
+                                type="checkbox"
+                            >
+
+                            <span>Buscar la frase completa</span>
+                        </label>
+                    </div>
+                </details>
+            </form>
+        </section>
+
+        <section
+            id="zona-respuestas"
+            class="zona-respuestas"
+            aria-live="polite"
+            aria-busy="false"
+        >
+            <div id="estado" class="estado estado--inicial">
+                Introduce una consulta para comenzar.
+            </div>
+
+            <section
+                id="resultados"
+                class="resultados"
+                aria-label="Resultados de búsqueda"
+            ></section>
+        </section>
+    </main>
+
+    <footer class="pie">
+        <div class="pie__contenido">
+            <p>
+                <strong>MYR Viajes</strong>
+                · Proyecto de Recuperación de Información y Web Semántica
+            </p>
+
+            <p>Fuentes: spain.info y Wikivoyage</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

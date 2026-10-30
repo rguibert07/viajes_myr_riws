@@ -697,7 +697,21 @@ Fallos:
 - El texto repetido de spain.info ("Ver más" y similares) afecta al ranking y está relacionado con la limitación de selectores del apartado 8. Valorar acotar el selector o limpiar esas cadenas en el pipeline.
 - Completar la tabla de resultados con las consultas 3 a 6 y decidir el valor final de `MINIMO_COINCIDENCIA`: `______`
 
----
+### 10.3 3. Interfaz web
+Consulta, resultados con título, fragmento y enlace a la fuente, filtros, y estados de carga, error y sin resultados.
+El proyecto incluye una interfaz web desarrollada con Flask para realizar consultas sobre el buscador de viajes.Actualmente la interfaz está probando el comportamiento con datos simulados. Cuando hagamos la conexión real, actualizaremos el apartado **Estado actual de la integración**.
+
+La interfaz se encuentra en el paquete `viajesweb`:
+```text
+viajesweb/
+├── __init__.py
+├── app.py
+├── templates/
+│ └── index.html
+└── static/
+├── app.js
+└── styles.css
+
 
 ## 10. Organización del proyecto
 
