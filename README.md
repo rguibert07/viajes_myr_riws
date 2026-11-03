@@ -699,18 +699,85 @@ Fallos:
 
 ### 10.3 3. Interfaz web
 Consulta, resultados con título, fragmento y enlace a la fuente, filtros, y estados de carga, error y sin resultados.
-El proyecto incluye una interfaz web desarrollada con Flask para realizar consultas sobre el buscador de viajes.Actualmente la interfaz está probando el comportamiento con datos simulados. Cuando hagamos la conexión real, actualizaremos el apartado **Estado actual de la integración**.
+El proyecto incluye una interfaz web denominada **MYR Viajes** desarrollada con Flask para realizar consultas sobre el buscador de viajes.Actualmente la interfaz está probando el comportamiento con datos simulados. Cuando hagamos la conexión real, actualizaremos el apartado. La interfaz permite introducir una consulta y presentar los resultados mediante:
+- Titulo del documento
+- Fragmento descriptivo
+- Enlace a la fuente original
+- Tipo de documento
+- Fuente de procedencia
+- Ciudad y país, cuando esten disponibles.
+- Estado inicial
+- Estado de carga
+- Estado sin resultados
+- Estado de error
+Tambien incluye filtros visuales por tipo, fuente y ciudad, además de una opcion para buscar una frase completa.
+#### Tecnologias utilizadas
+La interfaz se ha desarrollado utilizando:
+- **Flask** para crear el servidor web y los endpoints de la API.
+- **HTML** para definir la estructura de la página.
+- **CSSS** para el diseño visual y la adaptación a distintos tamaños de pantalla.
+- **JavaScript** para enviar las consultas sin recargar la pagina y actualizar dinamicamente los resultados.
+- **Elasticsearch** en la integración final como motor de recuperación de los documentos indexados.
+#### Por qué se eligio Flask
+Se eligio Flask porque el proyecto ya utiliza Python para el crawling,la carga, la evaluación y las consultas sobre Elasticsearch.
+Flask permite mantener toda la lógica del servidor en el mismo lenguaje y ofrece una estructura sencilla para esta interfaz.
+La interfaz se mantiene separada de la logica de recuperación:
 
+Navegador
+↓
+viajesweb/app.py
+↓
+viajesindex/busqueda.py
+↓
+Elasticsearch
+
+De esta forma ``viajesweb` se encarga de la presentación y `viajesindex` mantiene la estrategia de consulta e indexacion.
+
+**Estructura de la interfaz**.
 La interfaz se encuentra en el paquete `viajesweb`:
-```text
 viajesweb/
-├── __init__.py
-├── app.py
+├── __init__.py     --Permite que Python trate `viajesweb` como un paquete
+├── app.py      --Aplicación Flask y endpoints del servidor
 ├── templates/
-│ └── index.html
+│ └── index.html        --Estructura HTML de la interfaz
 └── static/
-├── app.js
-└── styles.css
+├── app.js      --Envio de consultas y presentación de los estados y resultados
+└── styles.css      --Diseño visual adaptable e identidad MYR
+**rama de Desarrollo de la Interfaz**. 
+La interfaz se ha desarrollado en la rama_
+feature/interfaz-web
+Se utilizo una rama independiente para aislar el desarrollo de la interfaz de los cambios que se realizan simultaneamente en main. Esta separación permite:
+- Desarrollar y probar la interfaz sin modificar directamente la version estable de main.
+- Revisar la interfaz antes de integrarla.
+- Evitar que una funcionalidad incompleta afecte al trabajo del resto del grupo.
+Mientras la rama no se haya fusionado con main debe utilizarse `feature/interfaz-web` para probar la aplicación web:
+git fetch origin
+git switch feature/interfaz-web
+git pull origin feature/interfaz-web
+
+Una vez que `feature/interfaz-web` se haya fusionado con `main`, ya no será
+necesario cambiar de rama. La aplicación podrá ejecutarse desde la versión actualizada de `main`:
+git switch main
+git pull origin main
+#### Requisitos previos
+Para ejecutar la aplicacion es necesario las dependencias Flask incluidas en `requirements.txt`. Si Flask no estuviera instalado puede instalarse manualmente con:
+python -m pip install Flask
+Se recomieninstalar siempre desde `requirements.txt` para que todos los integrantes del grupo utilicen las dependencias declaradas por el
+proyecto.
+Puede comprobarse la instalación con:
+python -c "import flask; print(flask.__version__)"
+#### Ejecución de la aplicación web
+Todos los comandos deben ejecutarse desde la raiz del repositorio, para iniciar la aplicación:
+python -m viajesweb.app
+No debe ejecutarse el comando desde el interior de `viajesweb`, porque Python
+necesita localizar `viajesweb` como paquete desde la raíz del proyecto.
+La salida esperada será similar a:
+* Serving Flask app 'viajesweb.app'
+* Debug mode: on
+* Running on http://127.0.0.1:5000
+La dirección indicada por Flask debe abrirse en el navegador. 
+
+
 
 
 ## 10. Organización del proyecto
