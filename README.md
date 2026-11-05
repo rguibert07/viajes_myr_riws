@@ -462,7 +462,7 @@ es.indices.create(index="viajes", settings={
 
 El índice se define como `strict` para rechazar campos no declarados. La unidad documental es la página.
 
-* **Mapeo estándar (`viajesindex/index.py`):** Define analizadores en español para `titulo`, `descripcion` y `texto`, y tipo `keyword` para los metadatos y el campo `secciones`.
+* **Mapeo estándar (`viajesindex/index_antiguo.py`):** Define analizadores en español para `titulo`, `descripcion` y `texto`, y tipo `keyword` para los metadatos y el campo `secciones`.
 * **Mapeo mejorado (`viajesindex/index_mejora.py`):** Modifica el campo `secciones` de `keyword` a `text` con el analizador `spanish`, añadiendo un subcampo `secciones.raw` de tipo `keyword`. Esto permite realizar búsquedas de texto sobre las secciones tokenizadas (clave para aprovechar la estructura de las guías de Wikivoyage) sin perder la capacidad de realizar agregaciones o filtros exactos.
 
 `viajesindex/index_mejora.py`
@@ -696,97 +696,159 @@ Fallos:
 - `MINIMO_COINCIDENCIA = "100%"` exige que casen todos los términos de la consulta, lo que debería eliminar los resultados que solo coinciden con "Santiago". El coste es una menor cobertura en consultas largas. Comparar las ejecuciones de `evaluacion.py` con `None` y con `"100%"`: `______`
 - El texto repetido de spain.info ("Ver más" y similares) afecta al ranking y está relacionado con la limitación de selectores del apartado 8. Valorar acotar el selector o limpiar esas cadenas en el pipeline.
 - Completar la tabla de resultados con las consultas 3 a 6 y decidir el valor final de `MINIMO_COINCIDENCIA`: `______`
+### 10.3. Interfaz web
 
-### 10.3 3. Interfaz web
-Consulta, resultados con título, fragmento y enlace a la fuente, filtros, y estados de carga, error y sin resultados.
-El proyecto incluye una interfaz web denominada **MYR Viajes** desarrollada con Flask para realizar consultas sobre el buscador de viajes.Actualmente la interfaz está probando el comportamiento con datos simulados. Cuando hagamos la conexión real, actualizaremos el apartado. La interfaz permite introducir una consulta y presentar los resultados mediante:
-- Titulo del documento
-- Fragmento descriptivo
-- Enlace a la fuente original
-- Tipo de documento
-- Fuente de procedencia
-- Ciudad y país, cuando esten disponibles.
-- Estado inicial
-- Estado de carga
-- Estado sin resultados
-- Estado de error
-Tambien incluye filtros visuales por tipo, fuente y ciudad, además de una opcion para buscar una frase completa.
-#### Tecnologias utilizadas
-La interfaz se ha desarrollado utilizando:
-- **Flask** para crear el servidor web y los endpoints de la API.
-- **HTML** para definir la estructura de la página.
-- **CSSS** para el diseño visual y la adaptación a distintos tamaños de pantalla.
-- **JavaScript** para enviar las consultas sin recargar la pagina y actualizar dinamicamente los resultados.
-- **Elasticsearch** en la integración final como motor de recuperación de los documentos indexados.
-#### Por qué se eligio Flask
-Se eligio Flask porque el proyecto ya utiliza Python para el crawling,la carga, la evaluación y las consultas sobre Elasticsearch.
-Flask permite mantener toda la lógica del servidor en el mismo lenguaje y ofrece una estructura sencilla para esta interfaz.
-La interfaz se mantiene separada de la logica de recuperación:
+Punto 3 del plan. Consulta, resultados con título, fragmento y enlace a la fuente, filtros, y estados de carga, error y sin resultados.
 
+El proyecto incluye una interfaz web denominada **MYR Viajes**, desarrollada con Flask, que consulta el índice de Elasticsearch a través de la estrategia de búsqueda del apartado 10.1. La interfaz ya está conectada al índice real: no usa datos simulados.
+
+La interfaz permite introducir una consulta y presenta cada resultado con:
+
+- Título del documento, enlazado a la página original.
+- Fragmento descriptivo, con las coincidencias resaltadas.
+- Tipo de documento.
+- Fuente de procedencia.
+- Ciudad y país, cuando están disponibles.
+
+Estados de la interfaz: inicial, carga, sin resultados y error (por ejemplo, si Elasticsearch no está en marcha o el índice no existe).
+
+Incluye filtros por tipo, fuente y ciudad, además de una opción para buscar la frase completa.
+
+#### Tecnologías utilizadas
+
+- **Flask** para el servidor web y los endpoints de la API.
+- **HTML** para la estructura de la página.
+- **CSS** para el diseño visual y la adaptación a distintos tamaños de pantalla.
+- **JavaScript** para enviar las consultas sin recargar la página y actualizar dinámicamente los resultados.
+- **Elasticsearch** como motor de recuperación de los documentos indexados.
+
+#### Por qué se eligió Flask
+
+El proyecto ya utiliza Python para el crawling, la carga, la evaluación y las consultas sobre Elasticsearch. Flask permite mantener toda la lógica del servidor en el mismo lenguaje y ofrece una estructura sencilla para esta interfaz.
+
+La interfaz se mantiene separada de la lógica de recuperación:
+
+```
 Navegador
-↓
+   |
 viajesweb/app.py
-↓
+   |
 viajesindex/busqueda.py
-↓
+   |
 Elasticsearch
+```
 
-De esta forma ``viajesweb` se encarga de la presentación y `viajesindex` mantiene la estrategia de consulta e indexacion.
+De esta forma `viajesweb` se encarga de la presentación y `viajesindex` mantiene la estrategia de consulta e indexación. `app.py` no duplica la consulta: importa `construir_consulta` y `CAMPOS` de `viajesindex/busqueda.py`, de modo que cualquier cambio en la estrategia de búsqueda (por ejemplo, el valor final de `MINIMO_COINCIDENCIA`) se refleja automáticamente en la web.
 
-**Estructura de la interfaz**.
+#### Estructura de la interfaz
+
 La interfaz se encuentra en el paquete `viajesweb`:
+
+```
 viajesweb/
-├── __init__.py     --Permite que Python trate `viajesweb` como un paquete
-├── app.py      --Aplicación Flask y endpoints del servidor
+├── __init__.py          Permite que Python trate `viajesweb` como un paquete
+├── app.py               Aplicación Flask, endpoints y conexión con Elasticsearch
 ├── templates/
-│ └── index.html        --Estructura HTML de la interfaz
+│   └── index.html       Estructura HTML de la interfaz
 └── static/
-├── app.js      --Envio de consultas y presentación de los estados y resultados
-└── styles.css      --Diseño visual adaptable e identidad MYR
-**rama de Desarrollo de la Interfaz**. 
-La interfaz se ha desarrollado en la rama_
-feature/interfaz-web
-Se utilizo una rama independiente para aislar el desarrollo de la interfaz de los cambios que se realizan simultaneamente en main. Esta separación permite:
-- Desarrollar y probar la interfaz sin modificar directamente la version estable de main.
+    ├── app.js           Envío de consultas y presentación de estados y resultados
+    └── styles.css       Diseño visual adaptable e identidad MYR
+```
+
+#### Conexión con Elasticsearch
+
+`app.py` crea un cliente de Elasticsearch (por defecto `http://localhost:9200`, configurable con la variable de entorno `ES_URL`) y consulta el índice `viajes`. Endpoints:
+
+| Endpoint | Descripción |
+|---|---|
+| `GET /` | Página principal de la interfaz |
+| `GET /api/buscar` | Búsqueda. Devuelve `total` y la lista `resultados` (los 10 más relevantes) |
+| `GET /api/estado` | Comprobación rápida: si Elasticsearch responde y cuántos documentos hay en el índice |
+
+Parámetros de `/api/buscar`:
+
+| Parámetro | Descripción |
+|---|---|
+| `q` | Texto de la consulta (obligatorio; si está vacío devuelve el error 400) |
+| `tipo` | Filtro exacto: `destino`, `region`, `ruta` o `articulo` |
+| `fuente` | Filtro exacto: `spain.info` o `es.wikivoyage.org` |
+| `pais` | Filtro exacto sobre el campo `pais` |
+| `ciudad` | Filtro parcial y sin distinguir mayúsculas (el campo es `keyword`, por lo que se usa una consulta `wildcard`) |
+| `frase` | Si vale `true`, solo devuelve documentos que contienen la frase exacta |
+
+Cada resultado incluye `titulo`, `fragmento`, `url`, `tipo`, `fuente`, `ciudad`, `pais` y `puntuacion`.
+
+Decisiones de implementación:
+
+- **Consulta:** sin la opción de frase se usa `construir_consulta` (varios campos con pesos y búsqueda de frase con `boost`, apartado 10.1). Con la opción de frase se usa un `multi_match` de tipo `phrase` sobre los mismos campos, con los filtros aplicados.
+- **Fragmento:** se obtiene con `highlight` sobre `texto` (200 caracteres). Se usa el codificador `html` para que Elasticsearch escape el HTML del texto indexado y solo añada las etiquetas `<mark>`, por lo que el fragmento se puede mostrar con `innerHTML` sin riesgo. Si la coincidencia está solo en el título y no hay fragmento resaltado, se usa la descripción o el inicio del texto.
+- **Errores:** si Elasticsearch no responde, la API devuelve 503 con un mensaje; si el índice no existe, 500 con la indicación de ejecutar `index_mejora.py` y `carga.py`. La interfaz muestra ese mensaje en el estado de error.
+
+#### Rama de desarrollo de la interfaz
+
+La interfaz se ha desarrollado en la rama `feature/interfaz-web`. Se utilizó una rama independiente para aislar el desarrollo de la interfaz de los cambios que se realizan simultáneamente en `main`. Esta separación permite:
+
+- Desarrollar y probar la interfaz sin modificar directamente la versión estable de `main`.
 - Revisar la interfaz antes de integrarla.
 - Evitar que una funcionalidad incompleta afecte al trabajo del resto del grupo.
-Mientras la rama no se haya fusionado con main debe utilizarse `feature/interfaz-web` para probar la aplicación web:
+
+Mientras la rama no se haya fusionado con `main`, debe utilizarse `feature/interfaz-web` para probar la aplicación web:
+
+```
 git fetch origin
 git switch feature/interfaz-web
 git pull origin feature/interfaz-web
+```
 
-Una vez que `feature/interfaz-web` se haya fusionado con `main`, ya no será
-necesario cambiar de rama. La aplicación podrá ejecutarse desde la versión actualizada de `main`:
+Una vez fusionada con `main`, ya no será necesario cambiar de rama:
+
+```
 git switch main
 git pull origin main
+```
+
 #### Requisitos previos
-Para ejecutar la aplicacion es necesario las dependencias Flask incluidas en `requirements.txt`. Si Flask no estuviera instalado puede instalarse manualmente con:
-python -m pip install Flask
-Se recomieninstalar siempre desde `requirements.txt` para que todos los integrantes del grupo utilicen las dependencias declaradas por el
-proyecto.
-Puede comprobarse la instalación con:
+
+- Dependencias de `requirements.txt` (incluye Flask y el cliente `elasticsearch`). Se recomienda instalar siempre desde `requirements.txt` para que todos los integrantes del grupo utilicen las mismas versiones:
+
+```
+python -m pip install -r requirements.txt
+```
+
+- Elasticsearch en marcha en local, con el índice `viajes` creado (`viajesindex/index_mejora.py`) y cargado (`viajesindex/carga.py`), como en el apartado 9.
+
+Se puede comprobar la instalación de Flask con:
+
+```
 python -c "import flask; print(flask.__version__)"
+```
+
 #### Ejecución de la aplicación web
-Todos los comandos deben ejecutarse desde la raiz del repositorio, para iniciar la aplicación:
+
+Todos los comandos deben ejecutarse desde la raíz del repositorio. Para iniciar la aplicación:
+
+```
 python -m viajesweb.app
-No debe ejecutarse el comando desde el interior de `viajesweb`, porque Python
-necesita localizar `viajesweb` como paquete desde la raíz del proyecto.
+```
+
+No debe ejecutarse el comando desde el interior de `viajesweb`, porque Python necesita localizar `viajesweb` y `viajesindex` como paquetes desde la raíz del proyecto.
+
 La salida esperada será similar a:
-* Serving Flask app 'viajesweb.app'
-* Debug mode: on
-* Running on http://127.0.0.1:5000
-La dirección indicada por Flask debe abrirse en el navegador. 
 
+```
+ * Serving Flask app 'viajesweb.app'
+ * Debug mode: on
+ * Running on http://127.0.0.1:5000
+```
 
+La dirección indicada por Flask debe abrirse en el navegador. Para comprobar la conexión con Elasticsearch sin usar la interfaz, abrir `http://127.0.0.1:5000/api/estado`: debe devolver `elasticsearch: true` y el número de documentos indexados.
 
+#### Limitaciones conocidas de la interfaz
 
-## 10. Organización del proyecto
-
-| Miembro | Responsabilidad |
-|---|---|
-| `______` | `______` |
-| `______` | `______` |
-| `______` | `______` |
+- El filtro de ciudad solo devuelve documentos de spain.info, porque en Wikivoyage los campos `ciudad` y `pais` están vacíos (apartado 8).
+- El filtro de ciudad no ignora las tildes: "coruna" no encuentra "A Coruña".
+- La API devuelve solo los 10 resultados más relevantes; todavía no hay paginación.
+- El ranking hereda las limitaciones de la estrategia de búsqueda (apartado 10.2), como el efecto del texto repetido de spain.info ("Ver más").
 
 Estructura del repositorio:
 

@@ -63,7 +63,7 @@ function crearResultado(resultado) {
 
     const fragmento = document.createElement("p");
     fragmento.className = "resultado__fragmento";
-    fragmento.textContent =
+    fragmento.innerHTML =
         resultado.fragmento || "No hay descripción disponible.";
 
     const metadatos = document.createElement("p");

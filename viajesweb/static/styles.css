@@ -609,3 +609,10 @@ select:focus {
         order: -1;
     }
 }
+
+.resultado__fragmento mark {
+    background: #fff3b0;
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+}
