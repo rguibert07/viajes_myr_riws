@@ -1,0 +1,1 @@
+{"custom_id":"q1","method":"POST","url":"/v1/chat/completions","body":{"messages":[{"role":"user","content":"Say hello."}],"max_tokens":10}}
