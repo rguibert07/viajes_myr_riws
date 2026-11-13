@@ -16,13 +16,6 @@ es.indices.create(index="viajes", settings={
         "titulo": {"type": "text", "analyzer": "spanish"},
         "descripcion": {"type": "text", "analyzer": "spanish"},
         "texto": {"type": "text", "analyzer": "spanish"},
-       # Mapeo propuesto
-        "secciones": {
-            "type": "text",
-            "analyzer": "spanish",
-            "fields": {
-                "raw": {"type": "keyword"}
-            }
-        }
+        "secciones": {"type": "keyword"},
     }
 })
