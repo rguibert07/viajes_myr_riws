@@ -68,7 +68,6 @@ def estado():
     except ApiError as e:
         return jsonify(elasticsearch=True, error=str(e.message)), 500
 
-
 @app.get("/api/buscar")
 def buscar():
     texto = request.args.get("q", "").strip()
@@ -80,6 +79,9 @@ def buscar():
         for c in FILTROS_EXACTOS
         if request.args.get(c, "").strip()
     }
+    if filtros.get("tipo") == "ruta":
+        del filtros["tipo"]
+
     ciudad = request.args.get("ciudad", "").strip()
     frase = request.args.get("frase", "").lower() in ("1", "true", "on")
 

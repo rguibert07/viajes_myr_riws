@@ -770,7 +770,7 @@ Parámetros de `/api/buscar`:
 | Parámetro | Descripción |
 |---|---|
 | `q` | Texto de la consulta (obligatorio; si está vacío devuelve el error 400) |
-| `tipo` | Filtro exacto: `destino`, `region`, `ruta` o `articulo` |
+| `tipo` | Filtro exacto: `destino`, `region` o `articulo` (`ruta` se oculta en la interfaz) |
 | `fuente` | Filtro exacto: `spain.info` o `es.wikivoyage.org` |
 | `pais` | Filtro exacto sobre el campo `pais` |
 | `ciudad` | Filtro parcial y sin distinguir mayúsculas (el campo es `keyword`, por lo que se usa una consulta `wildcard`) |
@@ -783,6 +783,7 @@ Decisiones de implementación:
 - **Consulta:** sin la opción de frase se usa `construir_consulta` (varios campos con pesos y búsqueda de frase con `boost`, apartado 10.1). Con la opción de frase se usa un `multi_match` de tipo `phrase` sobre los mismos campos, con los filtros aplicados.
 - **Fragmento:** se obtiene con `highlight` sobre `texto` (200 caracteres). Se usa el codificador `html` para que Elasticsearch escape el HTML del texto indexado y solo añada las etiquetas `<mark>`, por lo que el fragmento se puede mostrar con `innerHTML` sin riesgo. Si la coincidencia está solo en el título y no hay fragmento resaltado, se usa la descripción o el inicio del texto.
 - **Errores:** si Elasticsearch no responde, la API devuelve 503 con un mensaje; si el índice no existe, 500 con la indicación de ejecutar `index_mejora.py` y `carga.py`. La interfaz muestra ese mensaje en el estado de error.
+- **Filtro por tipo:** se excluye `ruta` de las opciones visibles del desplegable (`index.html`) y se ignora en `/api/buscar` si llega como parámetro, ya que apenas tiene representación en el corpus (1 documento en `spain.info`).
 
 #### Rama de desarrollo de la interfaz
 
