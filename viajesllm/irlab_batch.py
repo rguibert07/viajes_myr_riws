@@ -16,6 +16,7 @@ import getpass
 import json
 import os
 import time
+import sys
 from pathlib import Path
 
 from openai import OpenAI
@@ -25,11 +26,15 @@ POLL_SECONDS = 15            # cada cuanto se pregunta por el estado
 
 api_key = os.environ.get("IRLAB_API_KEY") or getpass.getpass("Token: ")
 client = OpenAI(api_key=api_key, base_url=BASE_URL)
-carpeta = Path(__file__).parent
+carpeta_input = "./input/"
+carpeta_output = "./output/"
+
+if len(sys.argv) != 2:
+    raise SystemExit("Wrong parameters: please provide partition number as argument")
 
 # 1) El fichero de entrada: una peticion por linea.
-input_path = carpeta / "input.jsonl"
-if not input_path.is_file():
+input_path = Path(carpeta_input + sys.argv[1] + ".jsonl")
+if not Path(input_path).exists():
     raise SystemExit(f"No se encuentra el fichero de entrada: {input_path}")
 
 # 2) y 3) Subir el fichero y crear el batch.
@@ -54,15 +59,18 @@ if batch.status != "completed":
 
 # 5) Guardar la salida en bruto ANTES de procesarla.
 #    Si el procesado falla, no hay que repetir (ni pagar) el batch.
+
+output_path = Path(carpeta_output + sys.argv[1]+".jsonl")
+error_path = Path(carpeta_output + "errors" + sys.argv[1]+".jsonl")
 if batch.output_file_id:
     salida = client.files.content(batch.output_file_id).text
-    (carpeta / "output.jsonl").write_text(salida, encoding="utf-8")
+    output_path.write_text(salida, encoding="utf-8")
 else:
     salida = ""
 if batch.error_file_id:
     errores = client.files.content(batch.error_file_id).text
-    (carpeta / "errors.jsonl").write_text(errores, encoding="utf-8")
-    print("Algunas peticiones fallaron: ver errors.jsonl")
+    error_path.write_text(errores, encoding="utf-8")
+    print("Algunas peticiones fallaron: ver /output/error.jsonl")
 
 # El orden de la salida NO tiene por que ser el de la entrada:
 # cada respuesta se identifica por su custom_id.
