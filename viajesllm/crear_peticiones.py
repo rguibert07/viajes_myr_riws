@@ -1,4 +1,5 @@
 import json
+import numpy as np
 
 def get_json():
     records = []
@@ -12,19 +13,25 @@ def get_json():
 def build_petition(document):
     text = document.get("texto")
     cut_text = ' '.join(text.split(".")[:3]) #:3
-    custom_id = document.get("custom_id")
+    custom_id = document.get("id")
     destination = document.get("titulo")
 
     return json.dumps({"custom_id": custom_id, "method": "POST", "url": "/v1/chat/completions", "body": {"messages": [{"role": "Actúa como un sistema que genera un breve texto introductorio de menos de 20 palabras sobre el destino turistico " + destination + " , sin generar conversación, utilizando el texto dado si es de utilidad.", "content": cut_text}], "max_tokens": 100}})
 
-def write_input(petitions):
-    with open ('input.jsonl', 'w') as file:
+def write_file(petitions, partition_number):
+    with open (f'input/{partition_number}.jsonl', 'w') as file:
         for petition in petitions:
             print(petition, file = file)
 
+def write_input(petitions):
+    partitions = np.array_split(petitions, 10)
+    for count, partition in enumerate(partitions, 0):
+        write_file(partition, count)
+    print(f'Escritos {len(partitions)} particiones en la carpeta ./input')
+
 if __name__ == '__main__':
-    records = get_json()
-    print(f'Loaded {len(records)} records')
-    petitions = list(map(build_petition, records))
+    documents = get_json()
+    print(f'Cargados {len(documents)} documentos')
+    petitions = list(map(build_petition, documents))
     write_input(petitions)
 
