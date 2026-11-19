@@ -868,3 +868,25 @@ viajescrawling/
 ```
 
 Los datos exportados (`*.jsonl`) se suben al repositorio si pesan poco; si no, se comparte un enlace de descarga. El `.gitignore` incluye `.venv/`. No se suben credenciales.
+
+
+### 10.4. Integración del LLM (`viajesllm`)
+
+Punto 4 del plan. **Decisión:** Enriquecimiento de documentos durante la indexación mediante la API de inferencia por lotes (Batch) del IRLab (`https://inference.irlab.org/v1`). Se descartó el postprocesado en tiempo real (RAG) para no penalizar la latencia de búsqueda ni depender de la disponibilidad del servidor de inferencia durante las consultas de los usuarios, manteniendo la búsqueda básica siempre disponible.
+
+#### Objetivos del enriquecimiento
+
+1. **Generación de resúmenes introductorios (`overview`):** Generar un texto introductorio breve (menos de 20 palabras) para cada uno de los 828 documentos del corpus (`index.jsonl`) a partir de su título y las tres primeras frases de su contenido, con el objetivo de mostrar una descripción homogénea y limpia en la interfaz web (`viajesweb`) en lugar de fragmentos crudos.
+2. **Completado de metadatos geográficos (`ciudad` y `pais`) en Wikivoyage (opcional según cupo):** Inferir la ciudad y el país de los 512 documentos procedentes de `es.wikivoyage.org` (que carecen de estos campos tras el crawling, ver apartado 8) para habilitar el filtrado geográfico unificado en toda la colección.
+
+#### Estructura y funcionamiento del módulo `viajesllm`
+
+```text
+viajesllm/
+├── crear_peticiones.py   Lee ../viajesindex/index.jsonl, construye los JSONL y los divide en particiones
+├── irlab_batch.py        Sube cada partición, espera su finalización (polling cada 15 s) y descarga la salida
+├── input/
+│   ├── overview/         Particiones de entrada 0.jsonl .. 9.jsonl para resúmenes
+│   └── completion/       Particiones de entrada para extracción de ciudad y país
+└── output/
+    └── overview/         Respuestas descargadas en bruto (<particion>.jsonl)
